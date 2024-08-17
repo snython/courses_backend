@@ -37,6 +37,6 @@ async def update_course_api(course_id: str, course_data: UpdateCourseDTO):
 async def delete_course_api(course_id: str):
     try:
         result = await delete_course(course_id)
-        return result
+        return "Delete successful"
     except Exception as e:
         raise HTTPException(status_code=404, detail="Course not found")
