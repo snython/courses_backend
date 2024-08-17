@@ -1,12 +1,14 @@
 import math
-from typing import Any, List, Optional
+from typing import Any, Dict, Optional
 from mongoengine import Q
 from mongoengine.errors import DoesNotExist, ValidationError
 from app.models.course import Course
 from app.models.university import University
-from app.dto.course import CourseDTO
+from app.models.course import Address
+from app.dto.course import CreateCourseDTO, UpdateCourseDTO
 from app.config.logger import logger
 from app.dto.pagination import PaginationDTO
+from app.utils.util import map_course_to_dict
 
 async def get_courses(
     search: Optional[str] = None,
@@ -60,48 +62,54 @@ async def get_courses(
     count_pipeline.extend([{ "$count": "count" }])
     result_count = list(Course.objects.aggregate(count_pipeline))
 
-    courses: list[Course] = []
     total_items = result_count[0]["count"] if len(result_count) > 0 else 0
     skip = (page - 1) * page_size
-
+    results = []
+    
     if total_items > 0:
                 pipeline.extend([
                 {
                     '$addFields': {
                         'id': { '$toString': "$_id" },
+                        'location.id': '$location._id',
+                        'university.id': '$university._id'
                     }
                 },
                 {
-                    '$project': { "_id": 0 }
+                    '$project': { 
+                         "_id": 0,
+                         'location._id': 0,
+                         'university._id': 0
+                    }
                 },
                     { "$skip": skip },
                     { "$limit": page_size }
                 ])
                 results = list(Course.objects.aggregate(pipeline))
-                for c in results:
-                    data = Course(**c).to_dict()
-                    data['university']['id'] = data['university']['_id']
-                    data['location']['id'] = data['location']['_id']
-                    del data['university']['_id']
-                    del data['location']['_id']
-                    courses.append(data)
 
     total_pages = math.ceil(total_items / page_size)
 
-    return {
-         "total_items":total_items,
-        "total_pages": total_pages,
-        "current_page": page,
-        "page_size": page_size,
-        "has_next": page < total_pages,
-        "has_previous": page > 1,
-        "items": courses
-    }
+    return PaginationDTO[Dict[str, Any]](
+        total_items = total_items,
+        total_pages =  total_pages,
+        current_page = page,
+        page_size = page_size,
+        has_next = page < total_pages,
+        has_previous = page > 1,
+        items = [ Course(**r).to_dict() for r in results ]
+    )
 
 
-async def create_course(course_data: CourseDTO) -> str:
+async def create_course(course_data: CreateCourseDTO) -> Dict[str, Any]:
     try:
-        university = University.objects.get(id=course_data.university)
+        #TODO: validation check that start date < end date
+        #TODO: check if course already exists return validation error
+        university = University.objects.get(id=course_data.university_id)
+        location = Address.objects(city=course_data.city, country=course_data.country).first()
+        if not location:
+            location = Address(city=course_data.city, country=course_data.country)
+            location.save()
+
         course = Course(
             name=course_data.name,
             description=course_data.description,
@@ -109,28 +117,36 @@ async def create_course(course_data: CourseDTO) -> str:
             end_date=course_data.end_date,
             price=course_data.price,
             currency=course_data.currency,
-            university=university
+            university=university,
+            location=location
         )
         course.save()
-        return str(course.id)
+        return map_course_to_dict(course)
     except (DoesNotExist, ValidationError) as e:
         logger.error(f"Failed to create course: {e}")
         raise e
 
-async def update_course(course_id: str, course_data: CourseDTO) -> str:
+async def update_course(course_id: str, course_data: UpdateCourseDTO) -> Dict[str, Any]:
     try:
         course = Course.objects.get(id=course_id)
-        course.update(**course_data.dict(exclude_unset=True))
-        return "Course updated successfully"
+        
+        course.currency = course_data.currency
+        course.price = course_data.price
+        course.start_date = course_data.start_date
+        course.end_date = course_data.end_date
+        course.description = course_data.description
+
+        course = course.save()
+        return map_course_to_dict(course)
     except (DoesNotExist, ValidationError) as e:
         logger.error(f"Failed to update course: {e}")
         raise e
 
-async def delete_course(course_id: str) -> str:
+async def delete_course(course_id: str) -> Dict[str, Any]:
     try:
         course = Course.objects.get(id=course_id)
         course.delete()
-        return "Course deleted successfully"
+        return map_course_to_dict(course)
     except DoesNotExist as e:
         logger.error(f"Failed to delete course: {e}")
         raise e

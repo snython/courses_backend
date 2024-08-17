@@ -2,11 +2,19 @@ from mongoengine import Document, DateTimeField
 from bson import DBRef, ObjectId
 from datetime import datetime, timezone
 
+from app.config.settings import settings
+
 class BaseModel(Document):
     created_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
 
     meta = {
-        'abstract': True  # Indicates this is a base class and won't be a collection itself
+        'abstract': True,
+        'indexes': [
+            {
+                'fields': ['created_at'],
+                'expireAfterSeconds': settings.mongo_ttl_seconds,
+            }
+        ]
     }
 
     def to_dict(self):

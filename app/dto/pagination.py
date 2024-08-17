@@ -1,10 +1,7 @@
 from typing import List, TypeVar, Generic, Dict, Any
-from math import ceil
-from mongoengine.queryset import QuerySet
+from pydantic import BaseModel
 
-from app.models.base import BaseModel
-
-T = TypeVar('T')
+T = TypeVar('T', bound=BaseModel)
 
 class PaginationDTO(BaseModel, Generic[T]):
     total_items: int
@@ -14,3 +11,6 @@ class PaginationDTO(BaseModel, Generic[T]):
     has_next: bool
     has_previous: bool
     items: List[T]
+
+    def __init__(self, **data):
+        super().__init__(**data)

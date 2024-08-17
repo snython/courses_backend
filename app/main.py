@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.mongo import init_db
 from app.services.data_loader import load_and_normalize_data
-from app.api import course
+from app.api import course, currency, university, address
 from app.config.settings import settings
 
 app = FastAPI()
@@ -26,7 +26,9 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(course.router, prefix="/courses")
-# app.include_router(university.router, prefix="/universities")
+app.include_router(university.router, prefix="/universities")
+app.include_router(address.router, prefix="/addresses")
+app.include_router(currency.router, prefix="/currencies")
 
 @app.get("/")
 async def root():

@@ -12,6 +12,18 @@ class Address(BaseModel):
             {
                 'fields': ('city', 'country'),
                 'unique': True
+            },
+            {
+                'fields': ['city'],
+                'name': 'city_index'  # Named index for city
+            },
+            {
+                'fields': ['country'],
+                'name': 'country_index'  # Named index for country
+            },
+            {
+                'fields': ['city', 'country'],
+                'name': 'city_country_index'  # Named composite index for city and country
             }
         ]
     }

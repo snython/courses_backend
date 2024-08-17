@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException
-from typing import Any, Dict, List, Optional
-from app.dto.course import CourseDTO
+from typing import Any, Dict, Optional
+from app.dto.course import CreateCourseDTO, UpdateCourseDTO
 from app.dto.pagination import PaginationDTO
 from app.services.course import get_courses, create_course, update_course, delete_course
 
 router = APIRouter()
 
-@router.get("/", response_model=Any)
+@router.get("/", response_model=PaginationDTO[Any])
 async def get_courses_api(
     search: Optional[str] = None,
     page: int = 1,
@@ -17,16 +17,16 @@ async def get_courses_api(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/", response_model=str)
-async def create_course_api(course_data: CourseDTO):
+@router.post("/", response_model=Dict[str, Any])
+async def create_course_api(course_data: CreateCourseDTO):
     try:
         course_id = await create_course(course_data)
         return course_id
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.put("/{course_id}", response_model=str)
-async def update_course_api(course_id: str, course_data: CourseDTO):
+@router.put("/{course_id}", response_model=Dict[str, Any])
+async def update_course_api(course_id: str, course_data: UpdateCourseDTO):
     try:
         result = await update_course(course_id, course_data)
         return result

@@ -1,4 +1,6 @@
 __pycache__
+app/db/__pycache__/
+app/models/__pycache__/
 venv
 .env
 

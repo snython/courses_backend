@@ -12,6 +12,7 @@ class University(BaseModel):
             {
                 'fields': ['created_at'],
                 'expireAfterSeconds': settings.mongo_ttl_seconds,
-            }
+            },
+            {'fields': ['name']}
         ]
     }

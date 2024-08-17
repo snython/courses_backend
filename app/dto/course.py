@@ -1,11 +1,21 @@
 from pydantic import BaseModel
 from typing import Optional
 
-class CourseDTO(BaseModel):
+class CreateCourseDTO(BaseModel):
     name: str
     description: Optional[str] = None
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    price: Optional[float] = None
-    currency: Optional[str] = None
-    university: str
+    start_date: str
+    end_date: str
+    price: float
+    currency: str
+    university_id: str
+    country: str
+    city: str
+
+
+class UpdateCourseDTO(BaseModel):
+    currency: str
+    price: float
+    start_date: str
+    end_date: str
+    description: Optional[str] = None
